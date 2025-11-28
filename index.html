@@ -4,101 +4,83 @@
 <meta charset="UTF-8">
 <title>bord</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
 <style>
 body { font-family: sans-serif; text-align: center; background-color: #e6f0ff; margin:0; padding:0; }
 h1 { margin:10px 0; }
 ul, ol { list-style: none; padding: 0; margin: 0; text-align:left; }
 li { margin: 2px 0; padding: 8px; border-radius: 8px; cursor: pointer; word-wrap: break-word; color:#fff; position:relative; }
 li small { display:block; font-size:0.8em; color:#f0f0f0; margin-top:2px; }
-li span {
-  white-space: pre-wrap;  /* 改行や空白を反映させる */
-}
+li span { white-space: pre-wrap; }
 button { padding: 10px 20px; margin: 5px; cursor: pointer; border-radius: 20px; border: none; font-size: 16px; }
 .greenBtn { background-color: #27ae60; color: white; }
 .redBtn { background-color: #c0392b; color: white; }
 #threadListSection { overflow-y: auto; padding: 10px; }
 #threadDetailSection { display:none; text-align:left; overflow-y: auto; padding: 10px; }
 
+/* ▼ 追加：並び替え選択 */
+#sortSelect {
+  width: 230px;
+  padding: 6px;
+  margin: 10px auto;
+  display: block;
+  border-radius: 8px;
+  font-size: 14px;
+}
+
 #popupForm {
   display: none;
   position: fixed;
-  top: 50%;          /* 少し上に */
+  top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
   background: white;
-  padding: 12px 16px; /* パディングを小さく */
+  padding: 12px 16px;
   border-radius: 8px;
   box-shadow: 0 0 10px rgba(0,0,0,0.5);
   z-index: 1000;
-  width: 280px;      /* 横幅を小さく */
-  max-width: 90%;    /* スマホ画面に収まるように */
+  width: 280px;
+  max-width: 90%;
 }
-#overlay { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.5); z-index: 999; }
-#loadingPopup { display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:#fff; padding:20px; border-radius:10px; box-shadow:0 0 10px rgba(0,0,0,0.5); z-index:2000; text-align:center; }
+#overlay { display:none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:999; }
+
+#loadingPopup { display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:#fff; padding:20px; border-radius:10px; z-index:2000; text-align:center; }
 .spinner { border:4px solid #f3f3f3; border-top:4px solid #3498db; border-radius:50%; width:40px; height:40px; animation:spin 1s linear infinite; margin:0 auto 10px; }
-@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-#loadingOkBtn { display:none; margin-top:10px; padding:6px 12px; border:none; border-radius:6px; background:#27ae60; color:#fff; cursor:pointer; }
-label { display:block; text-align:left; margin-top:8px; font-size:14px; }
 
-input, select {
-  width:100%;
-  box-sizing: border-box;
-  padding:6px;        /* 小さめ */
-  margin-top:4px;
-  border-radius:4px;
-  border:1px solid #ccc;
-  font-size:13px;     /* 少し小さく */
-  height:28px;        /* 高さ固定で揃える */
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
-textarea {
-  width:100%;
-  box-sizing: border-box;
-  padding:6px;
-  margin-top:4px;
-  border-radius:4px;
-  border:1px solid #ccc;
-  font-size:13px;
-  min-height:50px;    /* 80→50px に縮小 */
-  resize: vertical;
-}
+.threadRateBox { position:absolute; right:12px; top:12px; display:flex; gap:6px; }
+.threadRateBtn { background:rgba(255,255,255,0.2); border:none; padding:6px 8px; color:white; border-radius:6px; cursor:pointer; }
+.threadRateCount { font-weight:bold; margin-left:4px; }
 
-.pageBtn { background-color:#2980b9; margin: 2px; color:white; border:none; border-radius:4px; padding:4px 8px; cursor:pointer;}
-.pageBtn:disabled { background-color:#95a5a6; cursor:default; }
-#threadHeader h3 { margin:0; }
-#threadHeader small { color:#555; display:block; margin-top:2px; }
-.nicknameWithIcon img { width:48px; height:48px; vertical-align:middle; margin-right:4px; border-radius:0; }
-
-/* ポップアップタイトルの上余白を狭くする */
-#popupForm h3 {
-  margin-top: 4px;    /* 上の余白を小さく */
-  margin-bottom: 8px; /* 下の余白を少しだけ */
-  font-size: 18px;    /* 文字サイズは変えない */
-}
-
-/* 評価ボタン用スタイル（見た目は元に合わせ白文字で半透明） */
-.threadRateBox { position: absolute; right: 12px; top: 12px; display:flex; gap:6px; align-items:center; }
-.threadRateBtn {
-  background: rgba(255,255,255,0.18);
-  border: none;
-  color: #fff;
-  padding:6px 8px;
-  border-radius:6px;
-  cursor:pointer;
-  font-size:14px;
-}
-.threadRateCount { font-weight: bold; margin-left:6px; color:#fff; font-size:14px; }
+#imagePopup { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:3000; text-align:center; }
+#popupImage { max-width:90%; max-height:90%; margin-top:5%; }
 </style>
 </head>
+
 <body>
+
 <h1>bord</h1>
 
-<button id="adminBtn" class="redBtn" style="position: fixed; top:10px; left:10px;">管理者操作</button>
+<button id="adminBtn" class="redBtn" style="position:fixed; top:10px; left:10px;">管理者操作</button>
+
+<!-- ▼▼▼ 並び替えセレクト追加 ▼▼▼ -->
+<select id="sortSelect">
+  <option value="created_desc">作成日（新しい順）</option>
+  <option value="created_asc">作成日（古い順）</option>
+  <option value="lastpost_desc">最新投稿順</option>
+  <option value="likes_desc">高評価順</option>
+  <option value="dislikes_desc">低評価順</option>
+</select>
+<!-- ▲▲▲ -->
 
 <div id="threadListSection">
   <ul id="threadList"></ul>
   <div id="pagination"></div>
-  <button id="createThreadBtn" class="greenBtn" style="position: fixed; bottom:70px; right:20px;">新規スレッド作成</button>
+  <button id="createThreadBtn" class="greenBtn" style="position:fixed; bottom:70px; right:20px;">新規スレッド作成</button>
 </div>
 
 <div id="threadDetailSection">
@@ -107,9 +89,11 @@ textarea {
     <small id="threadDetail"></small>
     <small id="threadCreator"></small>
   </div>
+
   <ol id="postList"></ol>
-  <button id="createPostBtn" class="greenBtn" style="position: fixed; bottom:70px; right:20px;">投稿</button>
-  <button id="closeThreadBtn" class="greenBtn" style="position: fixed; bottom:70px; left:20px;">戻る</button>
+
+  <button id="createPostBtn" class="greenBtn" style="position:fixed; bottom:70px; right:20px;">投稿</button>
+  <button id="closeThreadBtn" class="greenBtn" style="position:fixed; bottom:70px; left:20px;">戻る</button>
 </div>
 
 <div id="overlay"></div>
@@ -117,19 +101,26 @@ textarea {
 <div id="popupForm">
   <h3 id="popupTitle">フォーム</h3>
 
+  <!-- スレッド作成フォーム -->
   <div id="threadFields">
     <label>ニックネーム</label>
-    <input id="threadMemberId" placeholder="ニックネーム" >
+    <input id="threadMemberId">
+
     <label>アイコン（任意）</label>
     <input id="threadIconInput" type="file" accept="image/*">
+
     <label>タイトル</label>
-    <input id="threadTitleInput" placeholder="タイトル" >
+    <input id="threadTitleInput">
+
     <label>詳細</label>
-    <textarea id="threadDetailInput" placeholder="詳細" ></textarea>
+    <textarea id="threadDetailInput"></textarea>
+
     <label>画像添付（任意）</label>
     <input id="threadImageInput" type="file" accept="image/*">
+
     <label>スレッドパスワード（任意）</label>
-    <input id="threadPasswordInput" placeholder="パスワード">
+    <input id="threadPasswordInput">
+
     <label>背景色</label>
     <select id="threadColorInput">
       <option value="#3498db">青</option>
@@ -145,15 +136,20 @@ textarea {
     </select>
   </div>
 
+  <!-- 投稿フォーム -->
   <div id="postFields" style="display:none;">
     <label>ニックネーム</label>
-    <input id="postMemberId" placeholder="ニックネーム" >
+    <input id="postMemberId">
+
     <label>アイコン（任意）</label>
     <input id="postIconInput" type="file" accept="image/*">
+
     <label>本文</label>
-    <textarea id="postBodyInput" placeholder="本文" ></textarea>
+    <textarea id="postBodyInput"></textarea>
+
     <label>画像添付（任意）</label>
     <input id="postImageInput" type="file" accept="image/*">
+
     <label>背景色</label>
     <select id="postColorInput">
       <option value="#3498db">青</option>
@@ -169,38 +165,38 @@ textarea {
     </select>
   </div>
 
-  <div id="adminFields" style="display:none;"> 
-<label>管理者パスワード</label> 
-<input id="adminPasswordInput" type="password" placeholder="パスワード"> 
-<label><input type="radio" name="adminAction" value="single"  checked> スレッド削除</label> 
-<label><input type="radio" name="adminAction" value="post"> 投稿削除</label> 
-<label><input type="radio" name="adminAction" value="lock"> スレッドロック</label> 
-<label><input type="radio" name="adminAction" value="unlock"> スレッドロック解除</label>
-<label><input type="radio" name="adminAction" value="all"> 全削除</label>     
-<select id="adminThreadSelect" style="display:block; width: 220px; margin: 5px auto;"></select> 
-<select id="adminPostSelect" style="display:block; width: 220px; margin: 5px auto;"></select> 
+  <!-- 管理者操作フォーム -->
+  <div id="adminFields" style="display:none;">
+    <label>管理者パスワード</label>
+    <input id="adminPasswordInput" type="password">
+
+    <label><input type="radio" name="adminAction" value="single" checked> スレッド削除</label>
+    <label><input type="radio" name="adminAction" value="post"> 投稿削除</label>
+    <label><input type="radio" name="adminAction" value="lock"> スレッドロック</label>
+    <label><input type="radio" name="adminAction" value="unlock"> ロック解除</label>
+    <label><input type="radio" name="adminAction" value="all"> 全削除</label>
+
+    <select id="adminThreadSelect" style="width:230px; margin:5px auto;"></select>
+    <select id="adminPostSelect" style="width:230px; margin:5px auto;"></select>
   </div>
 
+  <!-- パスワード要求 -->
   <div id="passwordFields" style="display:none;">
-    <label>スレッドパスワードを入力してください</label>
-    <input id="threadPasswordCheckInput" type="password" placeholder="パスワード">
+    <label>スレッドパスワード</label>
+    <input id="threadPasswordCheckInput" type="password">
   </div>
 
   <button id="submitBtn" class="greenBtn">送信</button>
   <button id="closePopupBtn" class="greenBtn">閉じる</button>
 </div>
 
-<div id="loadingPopup">
-  <div class="spinner"></div>
-  <div id="loadingText">読み込み中...</div>
-  <button id="loadingOkBtn">OK</button>
-</div>
-
-<div id="imagePopup" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:3000; text-align:center;">
-  <img id="popupImage" src="" style="max-width:90%; max-height:90%; margin-top:5%;">
-  <br>
+<!-- 画像ポップアップ -->
+<div id="imagePopup">
+  <img id="popupImage" src="">
   <button id="closeImagePopup" class="greenBtn" style="margin-top:10px;">閉じる</button>
 </div>
+
+<!-- ▼▼▼ ここから Part2（JS） を続けて貼って！ ▼▼▼ -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
 import { 
@@ -208,8 +204,9 @@ import {
   getDocs, doc, deleteDoc, updateDoc
 } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 
+/* Firebase設定 */
 const firebaseConfig = {
-  apiKey: "AIzaSyC9ygh6HjX5mK1e5ZBnEWnLQCEjRMKIEWA",
+  apiKey: "AIzaSyC9ygh6HJX5mK1e5ZBnEWnLQCEjRMKIEWA",
   authDomain: "sinzo-3f972.firebaseapp.com",
   projectId: "sinzo-3f972",
   storageBucket: "sinzo-3f972.firebasestorage.app",
@@ -219,543 +216,490 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
+/* 管理者パスワード */
 const ADMIN_PASSWORD = "2059";
 
+/* NGワード */
 const NG_WORDS = [
   "死ね","殺す","ぶっ殺す","死んで","地獄",
   "セックス","エロ","アダルト","わいせつ","裸","下着","淫ら","卑猥","ヌード",
-  "変態","性交","援助交際","中出し","オナニー","パイパン","乱交","ロリ","ショタ",
+  "変態","性交","援助交際","中出し","オナニー","パイパン","乱交","ロリ","ショタ"
 ];
 
 function containsNGWord(text){
   if(!text) return false;
-  for(const word of NG_WORDS){
-    if(text.includes(word)) return true;
-  }
-  return false;
+  return NG_WORDS.some(w => text.includes(w));
 }
 
-function getCookie(name) {
+/* Cookie */
+function getCookie(name){
   const value = `; ${document.cookie}`;
   const parts = value.split(`; ${name}=`);
-  if (parts.length === 2) return parts.pop().split(';').shift();
-  return null;
+  return parts.length === 2 ? parts.pop().split(";")[0] : null;
 }
 
-/* --- レート用クッキー関数（1回だけ） --- */
-function setRateCookie(threadId, type) {
-  const d = new Date();
-  d.setTime(d.getTime() + (365*24*60*60*1000)); // 1年
-  document.cookie = `rate_${threadId}=${type}; expires=${d.toUTCString()}; path=/`;
-}
-function getRateCookie(threadId) {
-  const value = `; ${document.cookie}`;
-  const parts = value.split(`; rate_${threadId}=`);
-  if (parts.length === 2) return parts.pop().split(";").shift();
-  return null;
-}
-
-/* --- 既存 --- */
-let nickName = getCookie("nickName") || "名称未設定";
-
-let iconBase64 = sessionStorage.getItem("icon") || null;
-let currentThreadId = null;
-let threadsData = [];
-let currentPage = 1;
-const pageSize = 10;
-let postsUnsub = null;
-let lockedThreads = new Set();
-
-const threadListSection=document.getElementById('threadListSection');
-const threadDetailSection=document.getElementById('threadDetailSection');
-const popupForm=document.getElementById('popupForm');
-const overlay=document.getElementById('overlay');
-const threadTitleElem=document.getElementById('threadTitle');
-const threadDetailElem=document.getElementById('threadDetail');
-const threadCreatorElem=document.getElementById('threadCreator');
-
-function formatDate(ts){ 
-  if(!ts) return '';
-  const d = ts.toDate? ts.toDate() : new Date(ts);
-  return `${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
-}
-function formatRelativeTime(ts){
-  if(!ts) return '';
-  const now = new Date();
-  const d = ts.toDate ? ts.toDate() : new Date(ts);
-
-  const diffMs = now - d;
-  const diffSec = Math.floor(diffMs / 1000);
-  const diffMin = Math.floor(diffSec / 60);
-  const diffHour = Math.floor(diffMin / 60);
-  const diffDay = Math.floor(diffHour / 24);
-
-  // 日付＋時間＋分
-  const dateStr = `${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
-
-  if(diffDay > 0) return `${dateStr} (${diffDay}日前)`;
-  if(diffHour > 0) return `${dateStr} (${diffHour}時間前)`;
-  if(diffMin > 0) return `${dateStr} (${diffMin}分前)`;
-  return `${dateStr} (たった今)`;
-}
-
-function setSectionsHeight(){ 
-  const vh = window.innerHeight; 
-  const h = vh-180; 
-  threadListSection.style.height = h+'px'; 
-  threadDetailSection.style.height = h+'px'; 
-}
-window.addEventListener('resize',setSectionsHeight); 
-window.addEventListener('orientationchange',setSectionsHeight);
-
-function showLoading(msg="読み込み中..."){ 
-  document.getElementById('loadingText').textContent=msg; 
-  document.getElementById('loadingOkBtn').style.display='none'; 
-  document.getElementById('loadingPopup').style.display='block'; 
-}
-function hideLoading(){ 
-  document.getElementById('loadingPopup').style.display='none'; 
-}
-function showAlert(msg){ 
-  document.getElementById('loadingText').textContent=msg; 
-  document.getElementById('loadingOkBtn').style.display='inline-block'; 
-  document.getElementById('loadingPopup').style.display='block'; 
-}
-document.getElementById('loadingOkBtn').onclick = hideLoading;
-
-function clearFormFields(fieldId){
-  if(fieldId==="threadFields"){
-    document.getElementById('threadMemberId').value=nickName;
-    document.getElementById('threadIconInput').value="";
-    document.getElementById('threadTitleInput').value="";
-    document.getElementById('threadDetailInput').value="";
-    document.getElementById('threadImageInput').value="";
-    document.getElementById('threadPasswordInput').value="";
-    document.getElementById('threadColorInput').selectedIndex=0;
-  } else if(fieldId==="postFields"){
-    document.getElementById('postMemberId').value=nickName;
-    document.getElementById('postIconInput').value="";
-    document.getElementById('postBodyInput').value="";
-    document.getElementById('postImageInput').value="";
-    document.getElementById('postColorInput').selectedIndex=0;
-  } else if(fieldId==="adminFields"){
-    document.getElementById('adminPasswordInput').value="";
-    document.getElementById('adminThreadSelect').selectedIndex=0;
-    document.getElementById('adminPostSelect').innerHTML="<option value=''>投稿選択</option>";
-  } else if(fieldId==="passwordFields"){
-    document.getElementById('threadPasswordCheckInput').value="";
-  }
-}
-
-function showForm(fieldId){ 
-  ['threadFields','postFields','adminFields','passwordFields'].forEach(id=>{
-    document.getElementById(id).style.display='none';
-  }); 
-  clearFormFields(fieldId);
-  document.getElementById(fieldId).style.display='block'; 
-  popupForm.style.display='block'; 
-  overlay.style.display='block'; 
-}
-function closePopup(){ 
-  popupForm.style.display='none'; 
-  overlay.style.display='none'; 
-}
-
-function validateNickname(input){ 
-  if(!input) return null; 
-  if(input==="しんぞ2059") return "しんぞ公式"; 
-  if(input.includes("しんぞ公式")) return null; 
-  return input; 
-}
-
-async function fileToBase64(file,maxWidth=800,maxHeight=800,quality=0.7){
-  if(!file) return null;
-  return new Promise((resolve,reject)=>{
-    const img = new Image();
-    const reader = new FileReader();
-    reader.onload = e => { img.src = e.target.result; };
-    reader.onerror = err => reject(err);
-    img.onload = ()=>{
-      const canvas=document.createElement('canvas');
-      let w=img.width,h=img.height;
-      if(w>maxWidth){ h=h*(maxWidth/w); w=maxWidth; }
-      if(h>maxHeight){ w=w*(maxHeight/h); h=maxHeight; }
-      canvas.width=w; canvas.height=h;
-      const ctx=canvas.getContext('2d');
-      ctx.drawImage(img,0,0,w,h);
-      resolve(canvas.toDataURL('image/jpeg',quality));
-    };
-    reader.readAsDataURL(file);
-  });
-}
-
-/* --- スレッド一覧描画 --- */
-function renderThreadsPage(){
-  const threadList=document.getElementById('threadList');
-  threadList.innerHTML="";
-  const start=(currentPage-1)*pageSize;
-  const pageThreads=threadsData.slice(start,start+pageSize);
-  if(pageThreads.length===0){ threadList.innerHTML="<li>まだありません</li>"; return; }
-  pageThreads.forEach(docItem=>{
-    const data=docItem.data();
-    const postCount = data.postCount || 0;
-    const li=document.createElement("li");
-    li.style.backgroundColor = data.color || "#3498db";
-
-    let titleText = data.locked ? `🔒${data.title}` : data.title;
-    if(data.password){ titleText += " 🔑"; }
-
-    // タイトル要素
-    const titleEl = document.createElement('div');
-    titleEl.innerHTML = `<strong>${titleText}</strong>`;
-
-    // 投稿数と詳細
-    const countEl = document.createElement('small');
-    countEl.textContent = `投稿数: ${postCount}`;
-    const detailEl = document.createElement('small');
-    detailEl.textContent = data.detail || '';
-
-    // --- 評価ボタン表示（タイトルの右側） ---
-    const rateBox = document.createElement('div');
-    rateBox.className = "threadRateBox";
-
-    const likeBtn = document.createElement('button');
-    likeBtn.className = "threadRateBtn";
-    likeBtn.innerHTML = `👍 <span class="threadRateCount">${data.likes || 0}</span>`;
-
-    const dislikeBtn = document.createElement('button');
-    dislikeBtn.className = "threadRateBtn";
-    dislikeBtn.innerHTML = `👎 <span class="threadRateCount">${data.dislikes || 0}</span>`;
-
-    rateBox.appendChild(likeBtn);
-    rateBox.appendChild(dislikeBtn);
-
-    // 挿入順：li にタイトル・詳細等を追加し、rateBox は absolute で右上に表示される
-    li.appendChild(titleEl);
-    li.appendChild(countEl);
-    li.appendChild(detailEl);
-    li.appendChild(rateBox);
-
-    if(data.image){
-      const btn=document.createElement('button');
-      btn.textContent="画像を表示";
-      btn.className="greenBtn";
-      btn.style.display="block";
-      btn.style.marginTop="5px";
-      btn.addEventListener('click',(e)=>{ e.stopPropagation(); showImagePopup(data.image); });
-      li.appendChild(btn);
-    }
-
-    // クリックでスレッドを開く（ボタン押下は stopPropagation で回避）
-    li.addEventListener('click',()=>{ tryOpenThread(docItem.id,data); });
-
-    // --- いいね / 低評価 ロジック ---
-    likeBtn.addEventListener("click", async (e) => {
-      e.stopPropagation();
-      const rated = getRateCookie(docItem.id);
-      if (rated) { showAlert("1回だけ押せます！"); return; }
-      try {
-        // 増加（原子的なトランザクションではないが簡易実装）
-        await updateDoc(doc(db, "threads", docItem.id), { likes: (data.likes || 0) + 1 });
-        setRateCookie(docItem.id, "like");
-      } catch (err) {
-        console.error(err);
-        showAlert("エラーが発生しました");
-      }
-    });
-
-    dislikeBtn.addEventListener("click", async (e) => {
-      e.stopPropagation();
-      const rated = getRateCookie(docItem.id);
-      if (rated) { showAlert("1回だけ押せます！"); return; }
-      try {
-        await updateDoc(doc(db, "threads", docItem.id), { dislikes: (data.dislikes || 0) + 1 });
-        setRateCookie(docItem.id, "dislike");
-      } catch (err) {
-        console.error(err);
-        showAlert("エラーが発生しました");
-      }
-    });
-
-    threadList.appendChild(li);
-  });
-
-  const pagination=document.getElementById('pagination');
-  pagination.innerHTML="";
-  const totalPages=Math.max(1,Math.ceil(threadsData.length/pageSize));
-  for(let i=1;i<=totalPages;i++){
-    const btn=document.createElement("button");
-    btn.textContent=i;
-    btn.className="pageBtn";
-    if(i===currentPage) btn.disabled=true;
-    btn.addEventListener('click',()=>{ currentPage=i; renderThreadsPage(); });
-    pagination.appendChild(btn);
-  }
-}
-
-/* --- Firestore 監視（likes/dislikes を補完） --- */
-async function listenThreads(){
-  const q=query(collection(db,"threads"),orderBy("created_at","desc"));
-  onSnapshot(q, async snapshot=>{
-    const updated = await Promise.all(snapshot.docs.map(async docItem=>{
-      const data = docItem.data();
-      try{
-        const postsSnap = await getDocs(collection(db, "threads", docItem.id, "posts"));
-        data.postCount = postsSnap.size;
-      }catch(e){ data.postCount = data.postCount || 0; }
-      // 初期化：likes/dislikes がない場合は0に
-      if (data.likes === undefined) data.likes = 0;
-      if (data.dislikes === undefined) data.dislikes = 0;
-      if(data.locked) lockedThreads.add(docItem.id);
-      return {id:docItem.id,data:()=>data};
-    }));
-    threadsData=updated;
-    renderThreadsPage();
-  });
-}
-
-// パスワード判定を追加
-async function tryOpenThread(threadId, data){
-  if(data.locked && !lockedThreads.has(threadId)){
-    showAlert("このスレッドは管理者によりロックされています");
-    return;
-  }
-
-  if(data.password){ 
-    showForm('passwordFields'); 
-    document.getElementById('popupTitle').textContent="スレッドパスワード入力";
-    document.getElementById('submitBtn').onclick=()=>{
-      const inputPass = document.getElementById('threadPasswordCheckInput').value.trim();
-      if(inputPass === data.password){
-        closePopup();
-        openThread(threadId,data);
-      } else {
-        showAlert("パスワードが違います");
-      }
-    };
-  } else {
-    openThread(threadId,data);
-  }
-}
-
-function openThread(threadId,data){
-  currentThreadId = threadId;
-  threadTitleElem.textContent = data.title;
-  threadDetailElem.textContent = data.detail || "";
-  threadCreatorElem.textContent = `作成者: ${data.memberId || "名称未設定"} ${formatDate(data.created_at)}`;
-  threadListSection.style.display='none';
-  threadDetailSection.style.display='block';
-  loadPosts(threadId);
-}
-
-// --- 投稿取得・レンダリング・その他 JS は次のメッセージで続く ---
-async function loadPosts(threadId){
-  const postList = document.getElementById('postList');
-  postList.innerHTML = "";
-
-  if(postsUnsub) postsUnsub();
-
-  const q = query(collection(db,"threads",threadId,"posts"),orderBy("created_at","asc"));
-  postsUnsub = onSnapshot(q,snapshot=>{
-    postList.innerHTML="";
-    let count = 1;
-    snapshot.forEach(docItem=>{
-      const pdata = docItem.data();
-      const li = document.createElement("li");
-      li.style.backgroundColor = pdata.color||"#3498db";
-      let bodyText = (pdata.body || "").replace(/\n/g, "<br>");
-let content = `#${count} `;
-if(pdata.icon){ content += `<img src="${pdata.icon}" alt="icon" style="width:32px;height:32px;vertical-align:middle;margin-right:4px;">`; }
-content += `<strong>${pdata.memberId || "名称未設定"}</strong>: ${bodyText}`;
-li.innerHTML = content;
-      const dateEl = document.createElement("small");
-      dateEl.textContent = formatRelativeTime(pdata.created_at);
-      li.appendChild(dateEl);
-
-
-      if(pdata.image){
-        const btn = document.createElement('button');
-        btn.textContent = "画像を表示";
-        btn.className = "greenBtn";
-        btn.style.display = "block";
-        btn.style.marginTop = "5px";
-        btn.addEventListener('click',()=>{ showImagePopup(pdata.image); });
-        li.appendChild(btn);
-      }
-      postList.appendChild(li);
-      count++;
-    });
-  });
-}
-
-// 画像ポップアップ
-function showImagePopup(src){ 
-  const popup=document.getElementById('imagePopup'); 
-  const img=document.getElementById('popupImage'); 
-  img.src=src; 
-  popup.style.display='block'; 
-}
-document.getElementById('closeImagePopup').addEventListener('click',()=>{ 
-  document.getElementById('imagePopup').style.display='none'; 
-});
-
-// スレッド一覧に戻る
-document.getElementById('closeThreadBtn').onclick=()=>{ 
-  if(postsUnsub) postsUnsub(); 
-  threadDetailSection.style.display='none'; 
-  threadListSection.style.display='block'; 
-};
-
-// 新規スレッド作成
-document.getElementById('createThreadBtn').onclick=()=>{ 
-  showForm('threadFields'); 
-  document.getElementById('popupTitle').textContent="新規スレッド作成"; 
-  document.getElementById('submitBtn').onclick=async()=>{
-    let inputNickname=document.getElementById('threadMemberId').value.trim();
-    const valid=validateNickname(inputNickname);
-    if(valid===null){ showAlert("「しんぞ」を含む名前は使えません"); return; }
-    if(valid) nickName=valid;
-    sessionStorage.setItem("nickName",nickName);
-
-    const iconFile=document.getElementById('threadIconInput').files[0];
-    if(iconFile){ 
-      iconBase64=await fileToBase64(iconFile,200,200,0.7); 
-      sessionStorage.setItem("icon",iconBase64); 
-    }
-
-    const title=document.getElementById('threadTitleInput').value.trim();
-    const detail=document.getElementById('threadDetailInput').value.trim();
-
-if(containsNGWord(title) || containsNGWord(detail)){
-  showAlert("タイトルまたは詳細に禁止ワードが含まれています");
-  return;
-}
-
-    const imageFile=document.getElementById('threadImageInput').files[0];
-    const imageBase64=imageFile?await fileToBase64(imageFile):null;
-    const password=document.getElementById('threadPasswordInput').value.trim();
-    const color=document.getElementById('threadColorInput').value;
-
-    if(!title){ showAlert("タイトルを入力してください"); return; }
-    showLoading("スレッド作成中...");
-    try{
-      // likes/dislikes を初期化して追加
-      await addDoc(collection(db,"threads"),{ memberId:nickName, icon:iconBase64, title, detail, image:imageBase64, password:password||null, color, created_at:Timestamp.now(), locked:false, likes:0, dislikes:0 });
-      closePopup();
-      hideLoading();
-    }catch(e){ console.error(e); showAlert("作成失敗"); }
-  }; 
-};
-
-// 投稿作成
-document.getElementById('createPostBtn').onclick=async()=>{ 
-  if(lockedThreads.has(currentThreadId)){
-    showAlert("このスレッドはロックされているため投稿できません");
-    return;
-  }
-  showForm('postFields'); 
-  document.getElementById('popupTitle').textContent="投稿作成"; 
-  document.getElementById('submitBtn').onclick=async()=>{
-    let inputNickname=document.getElementById('postMemberId').value.trim();
-    const valid=validateNickname(inputNickname);
-    if(valid===null){ showAlert("「しんぞ」を含む名前は使えません"); return; }
-    if(valid) nickName=valid;
-    function setCookie(name, value, days=365) {
+function setCookie(name, value, days=365){
   const d = new Date();
   d.setTime(d.getTime() + (days*24*60*60*1000));
   document.cookie = `${name}=${value}; expires=${d.toUTCString()}; path=/`;
 }
 
-setCookie("nickName", nickName);
-
-
-    const iconFile=document.getElementById('postIconInput').files[0];
-    if(iconFile){ iconBase64=await fileToBase64(iconFile,200,200,0.7); sessionStorage.setItem("icon",iconBase64); }
-
-    const body=document.getElementById('postBodyInput').value.trim();
-
-if(containsNGWord(body)){
-  showAlert("本文に禁止ワードが含まれています");
-  return;
+/* いいねクッキー */
+function setRateCookie(id, type){
+  setCookie(`rate_${id}`, type);
+}
+function getRateCookie(id){
+  return getCookie(`rate_${id}`);
 }
 
-    const imageFile=document.getElementById('postImageInput').files[0];
-    const imageBase64=imageFile?await fileToBase64(imageFile):null;
-    const color=document.getElementById('postColorInput').value;
+/* 基本変数 */
+let nickName = getCookie("nickName") || "名称未設定";
+let iconBase64 = sessionStorage.getItem("icon") || null;
 
-    if(!body && !imageBase64){ showAlert("本文または画像を入力してください"); return; }
+let currentThreadId = null;
+let threadsData = [];
+let postsUnsub = null;
 
-    let index=1;
-    try{
-      const snap=await getDocs(collection(db,"threads",currentThreadId,"posts"));
-      index=snap.size+1;
-    }catch(e){ index=1; }
+let currentPage = 1;
+const pageSize = 10;
 
-    showLoading("投稿中...");
-    try{
-      await addDoc(collection(db,"threads",currentThreadId,"posts"),{ memberId:nickName, icon:iconBase64, body, image:imageBase64, color, created_at:Timestamp.now(), index });
-      closePopup();
-      hideLoading();
-    }catch(e){ console.error(e); showAlert("投稿失敗"); }
-  }; 
+/* 並び替え */
+let currentSort = "created_desc";
+document.getElementById("sortSelect").onchange = e => {
+  currentSort = e.target.value;
+  sortThreads();
+  renderThreadsPage();
 };
 
-// 管理者操作
-document.getElementById('adminBtn').onclick=async()=>{
-  showForm('adminFields'); 
-  document.getElementById('popupTitle').textContent="管理者操作"; 
+/* 日付系 */
+function formatDate(ts){
+  if(!ts) return "";
+  const d = ts.toDate ? ts.toDate() : new Date(ts);
+  return `${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}
+          ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+}
 
-  const snap=await getDocs(collection(db,"threads")); 
-  const threadSelect=document.getElementById('adminThreadSelect'); 
-  threadSelect.innerHTML="<option value=''>スレッド選択</option>"; 
-  snap.forEach(d=>{ const data=d.data(); const opt=document.createElement('option'); opt.value=d.id; opt.textContent=data.title; threadSelect.appendChild(opt); }); 
-  document.getElementById('adminPostSelect').innerHTML="<option value=''>投稿選択</option>"; 
+function formatRelativeTime(ts){
+  if(!ts) return "";
+  const d = ts.toDate ? ts.toDate() : new Date(ts);
+  const now = new Date();
+  const diff = now - d;
 
-  document.getElementById('submitBtn').onclick=async()=>{
-    const pass=document.getElementById('adminPasswordInput').value; 
-    if(pass!==ADMIN_PASSWORD){ showAlert("パスワード間違い"); return; } 
-    const action=document.querySelector("input[name='adminAction']:checked").value; 
-    const threadId=document.getElementById('adminThreadSelect').value; 
-    const postId=document.getElementById('adminPostSelect').value; 
-    showLoading("処理中...");
-    try{
-      if(action==="all"){ 
-        const snap=await getDocs(collection(db,"threads")); 
-        for(const d of snap.docs){ await deleteDoc(doc(db,"threads",d.id)); } 
-      } else if(action==="single"){ 
-        if(threadId) await deleteDoc(doc(db,"threads",threadId)); 
-      } else if(action==="post"){ 
-        if(threadId && postId) await deleteDoc(doc(db,"threads",threadId,"posts",postId)); 
-      } else if(action==="lock"){ 
-        if(threadId){ await updateDoc(doc(db,"threads",threadId),{locked:true}); lockedThreads.add(threadId); } 
-      } else if(action==="unlock"){ 
-        if(threadId){ await updateDoc(doc(db,"threads",threadId),{locked:false}); lockedThreads.delete(threadId); } 
-      } 
-      closePopup(); 
-      hideLoading(); 
-    }catch(e){ console.error(e); showAlert("エラー"); }
+  const sec = Math.floor(diff / 1000);
+  const min = Math.floor(sec / 60);
+  const hour = Math.floor(min / 60);
+  const day = Math.floor(hour / 24);
+
+  const base = formatDate(ts);
+  if(day > 0) return `${base} (${day}日前)`;
+  if(hour > 0) return `${base} (${hour}時間前)`;
+  if(min > 0) return `${base} (${min}分前)`;
+  return `${base} (たった今)`;
+}
+
+/* 並び替え処理 */
+function sortThreads(){
+  threadsData.sort((a,b)=>{
+    const A=a.data(); const B=b.data();
+
+    if(currentSort==="created_desc")
+      return B.created_at.seconds - A.created_at.seconds;
+
+    if(currentSort==="created_asc")
+      return A.created_at.seconds - B.created_at.seconds;
+
+    if(currentSort==="likes_desc")
+      return (B.likes||0) - (A.likes||0);
+
+    if(currentSort==="dislikes_desc")
+      return (B.dislikes||0) - (A.dislikes||0);
+
+    if(currentSort==="lastpost_desc"){
+      const la = A.lastPost_at ? A.lastPost_at.seconds : 0;
+      const lb = B.lastPost_at ? B.lastPost_at.seconds : 0;
+      return lb - la;
+    }
+
+    return 0;
+  });
+}
+
+/* スレッド一覧描画 */
+function renderThreadsPage(){
+  const list = document.getElementById("threadList");
+  list.innerHTML = "";
+
+  const start = (currentPage-1) * pageSize;
+  const items = threadsData.slice(start, start+pageSize);
+
+  if(items.length === 0){
+    list.innerHTML = "<li>まだありません</li>";
+    return;
+  }
+
+  items.forEach(docItem=>{
+    const data = docItem.data();
+
+    const li = document.createElement("li");
+    li.style.backgroundColor = data.color;
+
+    let titleText = data.title;
+    if(data.locked) titleText = "🔒" + titleText;
+    if(data.password) titleText += " 🔑";
+
+    li.innerHTML = `
+      <strong>${titleText}</strong>
+      <small>投稿数: ${data.postCount || 0}</small>
+      <small>${data.detail || ""}</small>
+    `;
+
+    /* 評価ボタン */
+    const box = document.createElement("div");
+    box.className = "threadRateBox";
+
+    const likeBtn = document.createElement("button");
+    likeBtn.className = "threadRateBtn";
+    likeBtn.innerHTML = `👍 <span class="threadRateCount">${data.likes||0}</span>`;
+
+    const disBtn = document.createElement("button");
+    disBtn.className = "threadRateBtn";
+    disBtn.innerHTML = `👎 <span class="threadRateCount">${data.dislikes||0}</span>`;
+
+    box.appendChild(likeBtn);
+    box.appendChild(disBtn);
+    li.appendChild(box);
+
+    /* 画像表示ボタン */
+    if(data.image){
+      const imgBtn = document.createElement("button");
+      imgBtn.className = "greenBtn";
+      imgBtn.textContent = "画像を表示";
+      imgBtn.onclick = e => {
+        e.stopPropagation();
+        showImagePopup(data.image);
+      };
+      li.appendChild(imgBtn);
+    }
+
+    /* クリックでスレッドへ */
+    li.onclick = ()=> tryOpenThread(docItem.id, data);
+
+    /* いいね */
+    likeBtn.onclick = async e => {
+      e.stopPropagation();
+      if(getRateCookie(docItem.id)) return alert("1回だけ押せます！");
+      await updateDoc(doc(db,"threads",docItem.id),{
+        likes: (data.likes||0)+1
+      });
+      setRateCookie(docItem.id,"like");
+    };
+
+    /* 低評価 */
+    disBtn.onclick = async e => {
+      e.stopPropagation();
+      if(getRateCookie(docItem.id)) return alert("1回だけ押せます！");
+      await updateDoc(doc(db,"threads",docItem.id),{
+        dislikes: (data.dislikes||0)+1
+      });
+      setRateCookie(docItem.id,"dislike");
+    };
+
+    list.appendChild(li);
+  });
+
+  const totalPages = Math.max(1, Math.ceil(threadsData.length / pageSize));
+  const pagination = document.getElementById("pagination");
+  pagination.innerHTML = "";
+
+  for(let i=1; i<=totalPages; i++){
+    const btn = document.createElement("button");
+    btn.textContent = i;
+    btn.className = "pageBtn";
+    if(i===currentPage) btn.disabled = true;
+    btn.onclick = ()=>{ currentPage=i; renderThreadsPage(); };
+    pagination.appendChild(btn);
+  }
+}
+
+/* Firestore監視 */
+async function listenThreads(){
+  onSnapshot(collection(db,"threads"), async snap=>{
+    const arr = await Promise.all(snap.docs.map(async d=>{
+      const data = d.data();
+
+      const posts = await getDocs(collection(db,"threads",d.id,"posts"));
+      data.postCount = posts.size;
+
+      if(data.likes===undefined) data.likes=0;
+      if(data.dislikes===undefined) data.dislikes=0;
+
+      return { id:d.id, data:()=>data };
+    }));
+
+    threadsData = arr;
+    sortThreads();
+    renderThreadsPage();
+  });
+}
+
+/* スレッドを開く */
+async function tryOpenThread(id, data){
+  if(data.password){
+    showForm("passwordFields");
+    document.getElementById("popupTitle").textContent="スレッドパスワード";
+    document.getElementById("submitBtn").onclick = ()=>{
+      const val = document.getElementById("threadPasswordCheckInput").value;
+      if(val === data.password){
+        closePopup();
+        openThread(id,data);
+      } else {
+        alert("パスワードが違います");
+      }
+    };
+  } else {
+    openThread(id,data);
+  }
+}
+
+function openThread(id, data){
+  currentThreadId = id;
+
+  document.getElementById("threadTitle").textContent = data.title;
+  document.getElementById("threadDetail").textContent = data.detail||"";
+  document.getElementById("threadCreator").textContent =
+    `作成者: ${data.memberId} ${formatDate(data.created_at)}`;
+
+  document.getElementById("threadListSection").style.display="none";
+  document.getElementById("threadDetailSection").style.display="block";
+
+  loadPosts(id);
+}
+
+/* 投稿読み込み */
+function loadPosts(threadId){
+  const list = document.getElementById("postList");
+  list.innerHTML="";
+
+  if(postsUnsub) postsUnsub();
+
+  const q = query(collection(db,"threads",threadId,"posts"), orderBy("created_at","asc"));
+
+  postsUnsub = onSnapshot(q, snap=>{
+    list.innerHTML="";
+    let idx=1;
+
+    snap.forEach(p=>{
+      const data = p.data();
+      const li = document.createElement("li");
+      li.style.backgroundColor = data.color;
+
+      li.innerHTML = `#${idx} <strong>${data.memberId}</strong>: ${(data.body||"").replace(/\n/g,"<br>")}`;
+
+      const small = document.createElement("small");
+      small.textContent = formatRelativeTime(data.created_at);
+      li.appendChild(small);
+
+      if(data.image){
+        const btn = document.createElement("button");
+        btn.className = "greenBtn";
+        btn.textContent = "画像を表示";
+        btn.onclick = ()=>showImagePopup(data.image);
+        li.appendChild(btn);
+      }
+
+      list.appendChild(li);
+      idx++;
+    });
+
+    /* 最新投稿時刻更新 */
+    if(snap.size>0){
+      const last = snap.docs[snap.docs.length-1].data();
+      updateDoc(doc(db,"threads",threadId),{
+        lastPost_at: last.created_at
+      });
+    }
+  });
+}
+
+/* 画像ポップアップ */
+function showImagePopup(src){
+  document.getElementById("popupImage").src=src;
+  document.getElementById("imagePopup").style.display="block";
+}
+document.getElementById("closeImagePopup").onclick = ()=>{
+  document.getElementById("imagePopup").style.display="none";
+};
+
+/* 投稿作成 */
+document.getElementById("createPostBtn").onclick = ()=>{
+  showForm("postFields");
+  document.getElementById("popupTitle").textContent = "投稿";
+
+  document.getElementById("submitBtn").onclick = async ()=>{
+    let name = document.getElementById("postMemberId").value.trim();
+    if(name){ nickName=name; setCookie("nickName",nickName); }
+
+    const body = document.getElementById("postBodyInput").value.trim();
+    if(containsNGWord(body)) return alert("禁止ワードが含まれています");
+
+    const imgF = document.getElementById("postImageInput").files[0];
+    const img = imgF ? await fileToBase64(imgF) : null;
+
+    const color = document.getElementById("postColorInput").value;
+
+    if(!body && !img) return alert("本文または画像を入力してください");
+
+    await addDoc(collection(db,"threads",currentThreadId,"posts"),{
+      memberId: nickName,
+      icon: iconBase64,
+      body,
+      image: img,
+      color,
+      created_at: Timestamp.now()
+    });
+
+    await updateDoc(doc(db,"threads",currentThreadId),{
+      lastPost_at: Timestamp.now()
+    });
+
+    closePopup();
+  };
+};
+
+/* スレッド作成 */
+document.getElementById("createThreadBtn").onclick = ()=>{
+  showForm("threadFields");
+  document.getElementById("popupTitle").textContent = "新規スレッド";
+
+  document.getElementById("submitBtn").onclick = async ()=>{
+    let name = document.getElementById("threadMemberId").value.trim();
+    if(name) nickName=name;
+
+    const title = document.getElementById("threadTitleInput").value.trim();
+    const detail= document.getElementById("threadDetailInput").value.trim();
+    if(containsNGWord(title)||containsNGWord(detail))
+      return alert("禁止ワードが含まれています");
+
+    const imgF = document.getElementById("threadImageInput").files[0];
+    const img = imgF ? await fileToBase64(imgF) : null;
+
+    const color = document.getElementById("threadColorInput").value;
+    const pass  = document.getElementById("threadPasswordInput").value.trim();
+
+    if(!title) return alert("タイトルを入力してください");
+
+    await addDoc(collection(db,"threads"),{
+      memberId: nickName,
+      icon: iconBase64,
+      title,
+      detail,
+      image: img,
+      color,
+      password: pass||null,
+      created_at: Timestamp.now(),
+      likes: 0,
+      dislikes: 0,
+      lastPost_at: null
+    });
+
+    closePopup();
+  };
+};
+
+/* 管理者操作 */
+document.getElementById("adminBtn").onclick = async ()=>{
+  showForm("adminFields");
+  document.getElementById("popupTitle").textContent = "管理者操作";
+
+  const snap = await getDocs(collection(db,"threads"));
+  const sel = document.getElementById("adminThreadSelect");
+  sel.innerHTML = "<option value=''>スレッド選択</option>";
+
+  snap.forEach(d=>{
+    const opt=document.createElement("option");
+    opt.value=d.id;
+    opt.textContent=d.data().title;
+    sel.appendChild(opt);
+  });
+
+  sel.onchange = async ()=>{
+    const tid = sel.value;
+    const postSel = document.getElementById("adminPostSelect");
+    postSel.innerHTML = "<option value=''>投稿選択</option>";
+    if(tid){
+      const ps = await getDocs(collection(db,"threads",tid,"posts"));
+      ps.forEach(p=>{
+        const opt=document.createElement("option");
+        opt.value=p.id;
+        opt.textContent=(p.data().body||"[画像]")?.slice(0,10);
+        postSel.appendChild(opt);
+      });
+    }
   };
 
-  threadSelect.addEventListener('change',async()=>{
-    const tid=threadSelect.value; 
-    const postSelect=document.getElementById('adminPostSelect'); 
-    postSelect.innerHTML="<option value=''>投稿選択</option>"; 
-    if(tid){ 
-      const psnap=await getDocs(collection(db,"threads",tid,"posts")); 
-      psnap.forEach(d=>{
-        const pdata=d.data(); 
-        const opt=document.createElement('option'); 
-        opt.value=d.id; 
-        opt.textContent=pdata.body?pdata.body.slice(0,10):"[画像のみ]"; 
-        postSelect.appendChild(opt); 
-      }); 
-    } 
-  });
+  document.getElementById("submitBtn").onclick = async ()=>{
+    const pass = document.getElementById("adminPasswordInput").value;
+    if(pass!==ADMIN_PASSWORD) return alert("パスワード違い");
+
+    const mode = document.querySelector("input[name='adminAction']:checked").value;
+    const tid  = document.getElementById("adminThreadSelect").value;
+    const pid  = document.getElementById("adminPostSelect").value;
+
+    if(mode==="single" && tid){
+      await deleteDoc(doc(db,"threads",tid));
+    }
+    if(mode==="post" && tid && pid){
+      await deleteDoc(doc(db,"threads",tid,"posts",pid));
+    }
+    if(mode==="lock" && tid){
+      await updateDoc(doc(db,"threads",tid),{locked:true});
+    }
+    if(mode==="unlock" && tid){
+      await updateDoc(doc(db,"threads",tid),{locked:false});
+    }
+    if(mode==="all"){
+      const all=await getDocs(collection(db,"threads"));
+      for(const d of all.docs) await deleteDoc(doc(db,"threads",d.id));
+    }
+
+    closePopup();
+  };
 };
 
-document.getElementById('closePopupBtn').onclick=closePopup;
+/* ポップアップ操作 */
+function showForm(id){
+  ["threadFields","postFields","adminFields","passwordFields"].forEach(e=>{
+    document.getElementById(e).style.display="none";
+  });
+  document.getElementById(id).style.display="block";
+  document.getElementById("popupForm").style.display="block";
+  document.getElementById("overlay").style.display="block";
+}
 
-setSectionsHeight();
+function closePopup(){
+  document.getElementById("popupForm").style.display="none";
+  document.getElementById("overlay").style.display="none";
+}
+
+document.getElementById("closePopupBtn").onclick = closePopup;
+
+/* 画像をbase64へ */
+function fileToBase64(file){
+  return new Promise(res=>{
+    const r=new FileReader();
+    r.onload=()=>res(r.result);
+    r.readAsDataURL(file);
+  });
+}
+
+/* スレッド一覧の戻る */
+document.getElementById("closeThreadBtn").onclick = ()=>{
+  if(postsUnsub) postsUnsub();
+  document.getElementById("threadDetailSection").style.display="none";
+  document.getElementById("threadListSection").style.display="block";
+};
+
+/* 初期起動 */
 listenThreads();
 </script>
 </body>
