@@ -95,7 +95,7 @@ textarea {
 
 <div id="threadListSection">
 
-  <!-- ▼▼ 追加：ソートセレクト ▼▼ -->
+  <!-- ソートセレクト -->
   <div style="padding:5px; text-align:right;">
     <select id="sortSelect" style="padding:6px; border-radius:6px;">
       <option value="created_desc">作成日（新しい順）</option>
@@ -105,7 +105,6 @@ textarea {
       <option value="dislikes_desc">低評価順</option>
     </select>
   </div>
-  <!-- ▲▲ ここまで追加 ▲▲ -->
 
   <ul id="threadList"></ul>
   <div id="pagination"></div>
@@ -284,6 +283,13 @@ const threadTitleElem=document.getElementById('threadTitle');
 const threadDetailElem=document.getElementById('threadDetail');
 const threadCreatorElem=document.getElementById('threadCreator');
 
+function toMillisSafe(ts){
+  if(!ts) return 0;
+  if(typeof ts.toMillis === "function") return ts.toMillis();
+  if(typeof ts.getTime === "function") return ts.getTime();
+  return Number(ts) || 0;
+}
+
 function formatDate(ts){ 
   if(!ts) return '';
   const d = ts.toDate? ts.toDate() : new Date(ts);
@@ -333,22 +339,18 @@ function showAlert(msg){
 }
 document.getElementById('loadingOkBtn').onclick = hideLoading;
 
-/* ▼▼ 並び替え処理 ▼▼ */
+/* 並び替え処理 */
 function sortThreads() {
   const mode = document.getElementById("sortSelect").value;
 
   if (mode === "created_desc") {
-    threadsData.sort((a, b) => b.data().created_at.toMillis() - a.data().created_at.toMillis());
+    threadsData.sort((a, b) => toMillisSafe(b.data().created_at) - toMillisSafe(a.data().created_at));
 
   } else if (mode === "created_asc") {
-    threadsData.sort((a, b) => a.data().created_at.toMillis() - b.data().created_at.toMillis());
+    threadsData.sort((a, b) => toMillisSafe(a.data().created_at) - toMillisSafe(b.data().created_at));
 
   } else if (mode === "latest_post") {
-    threadsData.sort((a, b) => {
-      const aTime = a.data().latest_post || 0;
-      const bTime = b.data().latest_post || 0;
-      return bTime - aTime;
-    });
+    threadsData.sort((a, b) => (b.data().latest_post || 0) - (a.data().latest_post || 0));
 
   } else if (mode === "likes_desc") {
     threadsData.sort((a, b) => (b.data().likes || 0) - (a.data().likes || 0));
@@ -357,10 +359,11 @@ function sortThreads() {
     threadsData.sort((a, b) => (b.data().dislikes || 0) - (a.data().dislikes || 0));
   }
 }
-/* ▲▲ 並び替えここまで ▲▲ */
 
+/* イベント登録（セレクト変更） */
 document.getElementById("sortSelect").addEventListener("change", () => {
   sortThreads();
+  currentPage = 1; // ソート変更時は1ページに戻す
   renderThreadsPage();
 });
 
@@ -528,45 +531,39 @@ function renderThreadsPage(){
 }
 
 async function listenThreads(){
+  // 取得は作成日降順でOK（後でソート）
   const q=query(collection(db,"threads"),orderBy("created_at","desc"));
   onSnapshot(q, async snapshot=>{
-    const updated = await Promise.all(snapshot.docs.map(async docItem=>{
+    // snapshot 変化時に threadsData を新規構築（投稿情報はここでまとめて取得）
+    const updated = [];
+    for (const docItem of snapshot.docs){
       const data = docItem.data();
-      try{
-        const postsSnap = await getDocs(collection(db, "threads", docItem.id, "posts"));
-        data.postCount = postsSnap.size;
-      }catch(e){ data.postCount = data.postCount || 0; }
-
+      // 初期化値
       if (data.likes === undefined) data.likes = 0;
       if (data.dislikes === undefined) data.dislikes = 0;
+      data.postCount = 0;
+      data.latest_post = toMillisSafe(data.created_at); // 初期は作成日時
       if(data.locked) lockedThreads.add(docItem.id);
 
-      return {id:docItem.id,data:()=>data};
-    }));
-
-    threadsData=updated;
-
-    /* ▼▼ 最新投稿日時の計算 ▼▼ */
-    for (let t of threadsData) {
-      const d = t.data();
-      d.latest_post = d.created_at.toMillis(); // スレ作成日時を初期値
-    }
-
-    for (let t of threadsData) {
-      const threadId = t.id;
-      try {
-        const postsSnap = await getDocs(collection(db, "threads", threadId, "posts"));
-        postsSnap.forEach(p => {
-          const pdata = p.data();
-          if (pdata.created_at) {
-            const ts = pdata.created_at.toMillis();
-            if (ts > t.data().latest_post) t.data().latest_post = ts;
-          }
+      // posts を取得して postCount と最新投稿日時を計算
+      try{
+        const psnap = await getDocs(collection(db, "threads", docItem.id, "posts"));
+        data.postCount = psnap.size;
+        psnap.forEach(pdoc=>{
+          const pdata = pdoc.data();
+          const pms = toMillisSafe(pdata.created_at);
+          if(pms && pms > data.latest_post) data.latest_post = pms;
         });
-      } catch (e) {}
-    }
-    /* ▲▲ 最新投稿の計算ここまで ▲▲ */
+      }catch(e){
+        // エラーでも続行（postCount は 0 のまま）
+      }
 
+      updated.push({ id: docItem.id, data: () => data });
+    }
+
+    threadsData = updated;
+
+    // 並び替えして描画
     sortThreads();
     renderThreadsPage();
   });
