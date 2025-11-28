@@ -8,7 +8,7 @@
 body { font-family: sans-serif; text-align: center; background-color: #e6f0ff; margin:0; padding:0; }
 h1 { margin:10px 0; }
 ul, ol { list-style: none; padding: 0; margin: 0; text-align:left; }
-li { margin: 2px 0; padding: 8px; border-radius: 8px; cursor: pointer; word-wrap: break-word; color:#fff; }
+li { margin: 2px 0; padding: 8px; border-radius: 8px; cursor: pointer; word-wrap: break-word; color:#fff; position:relative; }
 li small { display:block; font-size:0.8em; color:#f0f0f0; margin-top:2px; }
 li span {
   white-space: pre-wrap;  /* 改行や空白を反映させる */
@@ -75,10 +75,22 @@ textarea {
   margin-bottom: 8px; /* 下の余白を少しだけ */
   font-size: 18px;    /* 文字サイズは変えない */
 }
+
+/* 評価ボタン用スタイル（見た目は元に合わせ白文字で半透明） */
+.threadRateBox { position: absolute; right: 12px; top: 12px; display:flex; gap:6px; align-items:center; }
+.threadRateBtn {
+  background: rgba(255,255,255,0.18);
+  border: none;
+  color: #fff;
+  padding:6px 8px;
+  border-radius:6px;
+  cursor:pointer;
+  font-size:14px;
+}
+.threadRateCount { font-weight: bold; margin-left:6px; color:#fff; font-size:14px; }
 </style>
 </head>
 <body>
-
 <h1>bord</h1>
 
 <button id="adminBtn" class="redBtn" style="position: fixed; top:10px; left:10px;">管理者操作</button>
@@ -230,6 +242,20 @@ function getCookie(name) {
   return null;
 }
 
+/* --- レート用クッキー関数（1回だけ） --- */
+function setRateCookie(threadId, type) {
+  const d = new Date();
+  d.setTime(d.getTime() + (365*24*60*60*1000)); // 1年
+  document.cookie = `rate_${threadId}=${type}; expires=${d.toUTCString()}; path=/`;
+}
+function getRateCookie(threadId) {
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; rate_${threadId}=`);
+  if (parts.length === 2) return parts.pop().split(";").shift();
+  return null;
+}
+
+/* --- 既存 --- */
 let nickName = getCookie("nickName") || "名称未設定";
 
 let iconBase64 = sessionStorage.getItem("icon") || null;
@@ -363,6 +389,7 @@ async function fileToBase64(file,maxWidth=800,maxHeight=800,quality=0.7){
   });
 }
 
+/* --- スレッド一覧描画 --- */
 function renderThreadsPage(){
   const threadList=document.getElementById('threadList');
   threadList.innerHTML="";
@@ -378,15 +405,36 @@ function renderThreadsPage(){
     let titleText = data.locked ? `🔒${data.title}` : data.title;
     if(data.password){ titleText += " 🔑"; }
 
+    // タイトル要素
     const titleEl = document.createElement('div');
     titleEl.innerHTML = `<strong>${titleText}</strong>`;
+
+    // 投稿数と詳細
     const countEl = document.createElement('small');
     countEl.textContent = `投稿数: ${postCount}`;
     const detailEl = document.createElement('small');
     detailEl.textContent = data.detail || '';
+
+    // --- 評価ボタン表示（タイトルの右側） ---
+    const rateBox = document.createElement('div');
+    rateBox.className = "threadRateBox";
+
+    const likeBtn = document.createElement('button');
+    likeBtn.className = "threadRateBtn";
+    likeBtn.innerHTML = `👍 <span class="threadRateCount">${data.likes || 0}</span>`;
+
+    const dislikeBtn = document.createElement('button');
+    dislikeBtn.className = "threadRateBtn";
+    dislikeBtn.innerHTML = `👎 <span class="threadRateCount">${data.dislikes || 0}</span>`;
+
+    rateBox.appendChild(likeBtn);
+    rateBox.appendChild(dislikeBtn);
+
+    // 挿入順：li にタイトル・詳細等を追加し、rateBox は absolute で右上に表示される
     li.appendChild(titleEl);
     li.appendChild(countEl);
     li.appendChild(detailEl);
+    li.appendChild(rateBox);
 
     if(data.image){
       const btn=document.createElement('button');
@@ -398,7 +446,37 @@ function renderThreadsPage(){
       li.appendChild(btn);
     }
 
+    // クリックでスレッドを開く（ボタン押下は stopPropagation で回避）
     li.addEventListener('click',()=>{ tryOpenThread(docItem.id,data); });
+
+    // --- いいね / 低評価 ロジック ---
+    likeBtn.addEventListener("click", async (e) => {
+      e.stopPropagation();
+      const rated = getRateCookie(docItem.id);
+      if (rated) { showAlert("1回だけ押せます！"); return; }
+      try {
+        // 増加（原子的なトランザクションではないが簡易実装）
+        await updateDoc(doc(db, "threads", docItem.id), { likes: (data.likes || 0) + 1 });
+        setRateCookie(docItem.id, "like");
+      } catch (err) {
+        console.error(err);
+        showAlert("エラーが発生しました");
+      }
+    });
+
+    dislikeBtn.addEventListener("click", async (e) => {
+      e.stopPropagation();
+      const rated = getRateCookie(docItem.id);
+      if (rated) { showAlert("1回だけ押せます！"); return; }
+      try {
+        await updateDoc(doc(db, "threads", docItem.id), { dislikes: (data.dislikes || 0) + 1 });
+        setRateCookie(docItem.id, "dislike");
+      } catch (err) {
+        console.error(err);
+        showAlert("エラーが発生しました");
+      }
+    });
+
     threadList.appendChild(li);
   });
 
@@ -415,6 +493,7 @@ function renderThreadsPage(){
   }
 }
 
+/* --- Firestore 監視（likes/dislikes を補完） --- */
 async function listenThreads(){
   const q=query(collection(db,"threads"),orderBy("created_at","desc"));
   onSnapshot(q, async snapshot=>{
@@ -424,6 +503,9 @@ async function listenThreads(){
         const postsSnap = await getDocs(collection(db, "threads", docItem.id, "posts"));
         data.postCount = postsSnap.size;
       }catch(e){ data.postCount = data.postCount || 0; }
+      // 初期化：likes/dislikes がない場合は0に
+      if (data.likes === undefined) data.likes = 0;
+      if (data.dislikes === undefined) data.dislikes = 0;
       if(data.locked) lockedThreads.add(docItem.id);
       return {id:docItem.id,data:()=>data};
     }));
@@ -557,7 +639,8 @@ if(containsNGWord(title) || containsNGWord(detail)){
     if(!title){ showAlert("タイトルを入力してください"); return; }
     showLoading("スレッド作成中...");
     try{
-      await addDoc(collection(db,"threads"),{ memberId:nickName, icon:iconBase64, title, detail, image:imageBase64, password:password||null, color, created_at:Timestamp.now(), locked:false });
+      // likes/dislikes を初期化して追加
+      await addDoc(collection(db,"threads"),{ memberId:nickName, icon:iconBase64, title, detail, image:imageBase64, password:password||null, color, created_at:Timestamp.now(), locked:false, likes:0, dislikes:0 });
       closePopup();
       hideLoading();
     }catch(e){ console.error(e); showAlert("作成失敗"); }
@@ -674,4 +757,6 @@ document.getElementById('closePopupBtn').onclick=closePopup;
 
 setSectionsHeight();
 listenThreads();
-</script> 
+</script>
+</body>
+</html>
