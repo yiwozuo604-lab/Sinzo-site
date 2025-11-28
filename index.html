@@ -88,10 +88,30 @@ textarea {
   font-size:14px;
 }
 .threadRateCount { font-weight: bold; margin-left:6px; color:#fff; font-size:14px; }
+
+/* 追加：スレッド用ソートプルダウン */
+#sortSelect {
+  width: 220px;
+  padding: 6px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  margin: 8px auto;
+  display: block;
+}
+
 </style>
 </head>
 <body>
 <h1>bord</h1>
+
+<!-- 追加：スレッド並び替えプルダウン（"スレッド"を明記） -->
+<select id="sortSelect" aria-label="スレッド表示順">
+  <option value="latestPost">スレッド最新投稿順</option> 
+  <option value="new">スレッド作成日（新しい順）</option>
+  <option value="old">スレッド作成日（古い順）</option>
+  <option value="high">高評価順</option>
+  <option value="low">低評価順</option>
+</select>
 
 <button id="adminBtn" class="redBtn" style="position: fixed; top:10px; left:10px;">管理者操作</button>
 
@@ -265,6 +285,9 @@ let currentPage = 1;
 const pageSize = 10;
 let postsUnsub = null;
 let lockedThreads = new Set();
+
+/* --- 追加: 並び替えモード --- */
+let sortMode = "new"; // デフォルト：スレ作成日（新しい順）
 
 const threadListSection=document.getElementById('threadListSection');
 const threadDetailSection=document.getElementById('threadDetailSection');
@@ -510,11 +533,68 @@ async function listenThreads(){
       return {id:docItem.id,data:()=>data};
     }));
     threadsData=updated;
+    // 追加: 各スレッドについて最新投稿時刻を取得（posts コレクションを参照）
+    // 注意: ここで getDocs を使うため、パフォーマンスに留意してください（スレッド数が多いと負荷が増えます）
+    try{
+      const enriched = await Promise.all(threadsData.map(async td=>{
+        const d = td.data();
+        let latest = 0;
+        try{
+          const psnap = await getDocs(collection(db, "threads", td.id, "posts"));
+          psnap.forEach(p=>{
+            const t = p.data().created_at;
+            let millis = 0;
+            if(t && typeof t.toMillis === 'function') millis = t.toMillis();
+            else if (t) millis = new Date(t).getTime();
+            if(millis > latest) latest = millis;
+          });
+        }catch(e){}
+        d.latestPostTime = latest;
+        return {id:td.id, data:()=>d};
+      }));
+      threadsData = enriched;
+    }catch(e){
+      // 失敗しても続行
+    }
+
+    applySort();
     renderThreadsPage();
   });
 }
 
-// パスワード判定を追加
+// 並び替え適用関数
+function applySort(){
+  if(!threadsData || threadsData.length===0) return;
+  threadsData.sort((a,b)=>{
+    const A = a.data();
+    const B = b.data();
+
+    // created_at ミリ秒取得の互換処理
+    const tAobj = A.created_at;
+    const tBobj = B.created_at;
+    let tA = 0, tB = 0;
+    if(tAobj){
+      if(typeof tAobj.toMillis === 'function') tA = tAobj.toMillis();
+      else tA = (new Date(tAobj)).getTime();
+    }
+    if(tBobj){
+      if(typeof tBobj.toMillis === 'function') tB = tBobj.toMillis();
+      else tB = (new Date(tBobj)).getTime();
+    }
+
+    const lpA = A.latestPostTime || 0;
+    const lpB = B.latestPostTime || 0;
+
+    if(sortMode === "new") return tB - tA;
+    if(sortMode === "old") return tA - tB;
+    if(sortMode === "latestPost") return lpB - lpA;
+    if(sortMode === "high") return (B.likes || 0) - (A.likes || 0);
+    if(sortMode === "low") return (A.dislikes || 0) - (B.dislikes || 0);
+    return 0;
+  });
+}
+
+/* --- パスワード判定を追加 --- */
 async function tryOpenThread(threadId, data){
   if(data.locked && !lockedThreads.has(threadId)){
     showAlert("このスレッドは管理者によりロックされています");
@@ -757,6 +837,14 @@ document.getElementById('closePopupBtn').onclick=closePopup;
 
 setSectionsHeight();
 listenThreads();
+
+/* --- 並び替えプルダウン連動（イベント） --- */
+document.getElementById('sortSelect').addEventListener('change', (e) => {
+  sortMode = e.target.value || "new";
+  applySort();
+  renderThreadsPage();
+});
+
 </script>
 </body>
 </html>
