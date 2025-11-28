@@ -476,7 +476,7 @@ function renderThreadsPage(){
     likeBtn.addEventListener("click", async (e) => {
       e.stopPropagation();
       const rated = getRateCookie(docItem.id);
-      if (rated) { showAlert("1回だけ押せます！"); return; }
+      if (rated) { showAlert("すでに押されています。"); return; }
       try {
         // 増加（原子的なトランザクションではないが簡易実装）
         await updateDoc(doc(db, "threads", docItem.id), { likes: (data.likes || 0) + 1 });
