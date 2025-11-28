@@ -10,9 +10,7 @@ h1 { margin:10px 0; }
 ul, ol { list-style: none; padding: 0; margin: 0; text-align:left; }
 li { margin: 2px 0; padding: 8px; border-radius: 8px; cursor: pointer; word-wrap: break-word; color:#fff; position:relative; }
 li small { display:block; font-size:0.8em; color:#f0f0f0; margin-top:2px; }
-li span {
-  white-space: pre-wrap;
-}
+li span { white-space: pre-wrap; }
 button { padding: 10px 20px; margin: 5px; cursor: pointer; border-radius: 20px; border: none; font-size: 16px; }
 .greenBtn { background-color: #27ae60; color: white; }
 .redBtn { background-color: #c0392b; color: white; }
@@ -91,20 +89,20 @@ textarea {
 <body>
 <h1>bord</h1>
 
+<!-- ★★ 並び替えセレクト（タイトル下：位置A） -->
+<div style="padding:6px 10px; text-align:right; max-width:980px; margin:0 auto;">
+  <select id="sortSelect" style="padding:6px; border-radius:6px;">
+    <option value="latest_post">最新投稿順（デフォルト）</option>
+    <option value="created_desc">作成日（新しい順）</option>
+    <option value="created_asc">作成日（古い順）</option>
+    <option value="likes_desc">高評価順</option>
+    <option value="dislikes_desc">低評価順</option>
+  </select>
+</div>
+
 <button id="adminBtn" class="redBtn" style="position: fixed; top:10px; left:10px;">管理者操作</button>
 
 <div id="threadListSection">
-
-  <!-- ソートセレクト -->
-  <div style="padding:5px; text-align:right;">
-    <select id="sortSelect" style="padding:6px; border-radius:6px;">
-      <option value="created_desc">作成日（新しい順）</option>
-      <option value="created_asc">作成日（古い順）</option>
-      <option value="latest_post">最新投稿順</option>
-      <option value="likes_desc">高評価順</option>
-      <option value="dislikes_desc">低評価順</option>
-    </select>
-  </div>
 
   <ul id="threadList"></ul>
   <div id="pagination"></div>
@@ -178,7 +176,6 @@ textarea {
       <option value="#16a085">深緑</option>
     </select>
   </div>
-
   <div id="adminFields" style="display:none;">
     <label>管理者パスワード</label>
     <input id="adminPasswordInput" type="password" placeholder="パスワード">
@@ -266,7 +263,6 @@ function getRateCookie(threadId) {
 }
 
 let nickName = getCookie("nickName") || "名称未設定";
-
 let iconBase64 = sessionStorage.getItem("icon") || null;
 let currentThreadId = null;
 let threadsData = [];
@@ -339,79 +335,6 @@ function showAlert(msg){
 }
 document.getElementById('loadingOkBtn').onclick = hideLoading;
 
-/* 並び替え処理 */
-function sortThreads() {
-  const mode = document.getElementById("sortSelect").value;
-
-  if (mode === "created_desc") {
-    threadsData.sort((a, b) => toMillisSafe(b.data().created_at) - toMillisSafe(a.data().created_at));
-
-  } else if (mode === "created_asc") {
-    threadsData.sort((a, b) => toMillisSafe(a.data().created_at) - toMillisSafe(b.data().created_at));
-
-  } else if (mode === "latest_post") {
-    threadsData.sort((a, b) => (b.data().latest_post || 0) - (a.data().latest_post || 0));
-
-  } else if (mode === "likes_desc") {
-    threadsData.sort((a, b) => (b.data().likes || 0) - (a.data().likes || 0));
-
-  } else if (mode === "dislikes_desc") {
-    threadsData.sort((a, b) => (b.data().dislikes || 0) - (a.data().dislikes || 0));
-  }
-}
-
-/* イベント登録（セレクト変更） */
-document.getElementById("sortSelect").addEventListener("change", () => {
-  sortThreads();
-  currentPage = 1; // ソート変更時は1ページに戻す
-  renderThreadsPage();
-});
-
-function clearFormFields(fieldId){
-  if(fieldId==="threadFields"){
-    document.getElementById('threadMemberId').value=nickName;
-    document.getElementById('threadIconInput').value="";
-    document.getElementById('threadTitleInput').value="";
-    document.getElementById('threadDetailInput').value="";
-    document.getElementById('threadImageInput').value="";
-    document.getElementById('threadPasswordInput').value="";
-    document.getElementById('threadColorInput').selectedIndex=0;
-  } else if(fieldId==="postFields"){
-    document.getElementById('postMemberId').value=nickName;
-    document.getElementById('postIconInput').value="";
-    document.getElementById('postBodyInput').value="";
-    document.getElementById('postImageInput').value="";
-    document.getElementById('postColorInput').selectedIndex=0;
-  } else if(fieldId==="adminFields"){
-    document.getElementById('adminPasswordInput').value="";
-    document.getElementById('adminThreadSelect').selectedIndex=0;
-    document.getElementById('adminPostSelect').innerHTML="<option value=''>投稿選択</option>";
-  } else if(fieldId==="passwordFields"){
-    document.getElementById('threadPasswordCheckInput').value="";
-  }
-}
-
-function showForm(fieldId){ 
-  ['threadFields','postFields','adminFields','passwordFields'].forEach(id=>{
-    document.getElementById(id).style.display='none';
-  }); 
-  clearFormFields(fieldId);
-  document.getElementById(fieldId).style.display='block'; 
-  popupForm.style.display='block'; 
-  overlay.style.display='block'; 
-}
-function closePopup(){ 
-  popupForm.style.display='none'; 
-  overlay.style.display='none'; 
-}
-
-function validateNickname(input){ 
-  if(!input) return null; 
-  if(input==="しんぞ2059") return "しんぞ公式"; 
-  if(input.includes("しんぞ公式")) return null; 
-  return input; 
-}
-
 async function fileToBase64(file,maxWidth=800,maxHeight=800,quality=0.7){
   if(!file) return null;
   return new Promise((resolve,reject)=>{
@@ -433,6 +356,30 @@ async function fileToBase64(file,maxWidth=800,maxHeight=800,quality=0.7){
   });
 }
 
+/* --- 並び替えロジック --- */
+function sortThreads(){
+  const mode = document.getElementById("sortSelect").value;
+  if(mode === "latest_post"){
+    threadsData.sort((a,b) => (b.data().latest_post || 0) - (a.data().latest_post || 0));
+  } else if(mode === "created_desc"){
+    threadsData.sort((a,b) => toMillisSafe(b.data().created_at) - toMillisSafe(a.data().created_at));
+  } else if(mode === "created_asc"){
+    threadsData.sort((a,b) => toMillisSafe(a.data().created_at) - toMillisSafe(b.data().created_at));
+  } else if(mode === "likes_desc"){
+    threadsData.sort((a,b) => (b.data().likes || 0) - (a.data().likes || 0));
+  } else if(mode === "dislikes_desc"){
+    threadsData.sort((a,b) => (b.data().dislikes || 0) - (a.data().dislikes || 0));
+  }
+}
+
+/* セレクト変更で再描画（1ページ目に戻す） */
+document.getElementById("sortSelect").addEventListener("change", () => {
+  currentPage = 1;
+  sortThreads();
+  renderThreadsPage();
+});
+
+/* --- スレッド一覧描画 --- */
 function renderThreadsPage(){
   const threadList=document.getElementById('threadList');
   threadList.innerHTML="";
@@ -529,23 +476,21 @@ function renderThreadsPage(){
     pagination.appendChild(btn);
   }
 }
-
+/* --- Firestore 監視（posts を全読みする方式は既存ロジックを維持） --- */
 async function listenThreads(){
-  // 取得は作成日降順でOK（後でソート）
   const q=query(collection(db,"threads"),orderBy("created_at","desc"));
   onSnapshot(q, async snapshot=>{
-    // snapshot 変化時に threadsData を新規構築（投稿情報はここでまとめて取得）
     const updated = [];
     for (const docItem of snapshot.docs){
       const data = docItem.data();
-      // 初期化値
+      // 初期化
       if (data.likes === undefined) data.likes = 0;
       if (data.dislikes === undefined) data.dislikes = 0;
       data.postCount = 0;
       data.latest_post = toMillisSafe(data.created_at); // 初期は作成日時
       if(data.locked) lockedThreads.add(docItem.id);
 
-      // posts を取得して postCount と最新投稿日時を計算
+      // posts を取得して postCount と最新投稿日時を計算（既存のやり方）
       try{
         const psnap = await getDocs(collection(db, "threads", docItem.id, "posts"));
         data.postCount = psnap.size;
@@ -554,16 +499,14 @@ async function listenThreads(){
           const pms = toMillisSafe(pdata.created_at);
           if(pms && pms > data.latest_post) data.latest_post = pms;
         });
-      }catch(e){
-        // エラーでも続行（postCount は 0 のまま）
-      }
+      }catch(e){ /* ignore */ }
 
       updated.push({ id: docItem.id, data: () => data });
     }
 
     threadsData = updated;
 
-    // 並び替えして描画
+    // ソートを適用してから描画
     sortThreads();
     renderThreadsPage();
   });
