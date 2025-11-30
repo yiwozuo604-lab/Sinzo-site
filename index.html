@@ -884,7 +884,7 @@ async function heartbeat() {
   await setDoc(onlineRef, { t: serverTimestamp() });
 }
 heartbeat();
-setInterval(heartbeat, 20000); // 20秒ごと更新
+setInterval(heartbeat, 5000); // 20秒ごと更新
 
 onSnapshot(collection(db, "online"), snap => {
   const now = Date.now();
@@ -895,7 +895,7 @@ onSnapshot(collection(db, "online"), snap => {
     if (!data.t) return;
 
     const ts = data.t.toMillis ? data.t.toMillis() : new Date(data.t).getTime();
-    if (now - ts < 30000) count++; // 30秒以内 → オンライン
+    if (now - ts < 6000) count++; // 30秒以内 → オンライン
   });
 
   document.getElementById("onlineCount").textContent = `同接数: ${count}人`;
