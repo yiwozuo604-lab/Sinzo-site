@@ -102,7 +102,24 @@ textarea {
 </style>
 </head>
 <body>
-<h1>bord</h1>
+<h1 style="display:flex; align-items:center; justify-content:center; gap:20px;">
+
+  <!-- 左：公式サイトボタン -->
+  <button 
+    onclick="location.href='https://sites.google.com/view/sinzobord'" 
+    class="greenBtn"
+    style="font-size:14px; padding:6px 12px;">
+    公式サイト
+  </button>
+
+  <!-- 中央：タイトル -->
+  <span>bord</span>
+
+  <!-- 右：同接数 -->
+  <span id="onlineCount" style="font-size:14px; color:#333;">同接数: 0人</span>
+
+</h1>
+
 
 <!-- 追加：スレッド並び替えプルダウン（"スレッド"を明記） -->
 <select id="sortSelect" aria-label="スレッド表示順">
@@ -226,6 +243,11 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebas
 import { 
   getFirestore, collection, addDoc, query, orderBy, onSnapshot, Timestamp,
   getDocs, doc, deleteDoc, updateDoc
+} from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+/* --- 同接数で必要な追加 import --- */
+import { 
+  serverTimestamp, 
+  setDoc 
 } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -844,6 +866,30 @@ document.getElementById('sortSelect').addEventListener('change', (e) => {
   applySort();
   renderThreadsPage();
 });
+/* --- 同接数（presence） --- */
+const onlineRef = doc(db, "online", Math.random().toString(36).slice(2));
+
+async function heartbeat() {
+  await setDoc(onlineRef, { t: serverTimestamp() });
+}
+heartbeat();
+setInterval(heartbeat, 20000); // 20秒ごと更新
+
+onSnapshot(collection(db, "online"), snap => {
+  const now = Date.now();
+  let count = 0;
+
+  snap.forEach(d => {
+    const data = d.data();
+    if (!data.t) return;
+
+    const ts = data.t.toMillis ? data.t.toMillis() : new Date(data.t).getTime();
+    if (now - ts < 30000) count++; // 30秒以内 → オンライン
+  });
+
+  document.getElementById("onlineCount").textContent = `同接数: ${count}人`;
+});
+
 
 </script>
 </body>
